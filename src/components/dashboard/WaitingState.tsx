@@ -1,59 +1,72 @@
 'use client';
 
 import React from 'react';
-import { Radio, Cpu, Wifi, Play, Sparkles, RefreshCw, AlertCircle } from 'lucide-react';
+import { Radio, Cpu, RefreshCw, Terminal } from 'lucide-react';
 import { ConnectionState } from '@/types/worker';
 
 interface WaitingStateProps {
   connectionState: ConnectionState;
-  onSimulateSample?: () => void;
+  /** True only when the relay confirms the upstream MQTT broker is connected. */
+  mqttConnected?: boolean;
   onReconnect?: () => void;
   wsUrl: string;
 }
 
 export const WaitingState: React.FC<WaitingStateProps> = ({
   connectionState,
-  onSimulateSample,
+  mqttConnected = false,
   onReconnect,
   wsUrl,
 }) => {
   const isConnecting = connectionState === 'CONNECTING';
   const isConnected = connectionState === 'CONNECTED';
 
+  // Two independent links can be down. Say which one, so nobody hunts the
+  // wrong end of the pipeline.
+  const headline = mqttConnected
+    ? 'Waiting for node telemetry'
+    : 'Waiting for MQTT broker';
+  const detail = mqttConnected
+    ? 'Broker link is up. Listening for the first packet from the ESP32 WSN node on mine/test.'
+    : 'The dashboard stays dark until the relay reports a live MQTT broker connection. No readings are shown until then.';
+
   return (
-    <div className="industrial-card rounded-3xl p-8 sm:p-12 text-center my-6 relative overflow-hidden border-2 border-dashed border-industrial-700">
-      {/* Background radar animation */}
-      <div className="absolute inset-0 flex items-center justify-center opacity-10 pointer-events-none">
-        <div className="w-96 h-96 rounded-full border border-cyan-400 animate-ping" />
-        <div className="w-64 h-64 rounded-full border border-cyan-500 animate-pulse" />
+    <div className="industrial-card rounded-2xl sm:rounded-3xl p-6 sm:p-10 lg:p-14 text-center relative overflow-hidden border-dashed">
+      {/* Radar sweep backdrop */}
+      <div
+        className="absolute inset-0 flex items-center justify-center opacity-[0.12] pointer-events-none"
+        aria-hidden="true"
+      >
+        <div className="absolute w-[22rem] h-[22rem] sm:w-[30rem] sm:h-[30rem] rounded-full border border-cyan-400 animate-ping-slow" />
+        <div className="absolute w-[14rem] h-[14rem] sm:w-[20rem] sm:h-[20rem] rounded-full border border-cyan-500 animate-pulse" />
+        <div className="absolute w-[7rem] h-[7rem] sm:w-[11rem] sm:h-[11rem] rounded-full border border-cyan-300" />
       </div>
 
-      <div className="relative z-10 max-w-xl mx-auto space-y-6">
-        {/* Radar / Sensor Icon */}
+      <div className="relative z-10 max-w-xl mx-auto space-y-5 sm:space-y-6">
+        {/* Beacon */}
         <div className="relative inline-flex items-center justify-center">
-          <div className="w-20 h-20 rounded-3xl bg-industrial-800 border-2 border-cyan-500/40 flex items-center justify-center text-cyan-400 shadow-xl shadow-cyan-950">
-            <Radio className="w-10 h-10 animate-pulse" />
+          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-3xl instrument-well !border-cyan-500/40 flex items-center justify-center text-cyan-400">
+            <Radio className="w-8 h-8 sm:w-10 sm:h-10 animate-pulse" />
           </div>
-          <span className="absolute -top-1 -right-1 flex h-4 w-4">
+          <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75" />
-            <span className="relative inline-flex rounded-full h-4 w-4 bg-cyan-500" />
+            <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-cyan-500" />
           </span>
         </div>
 
-        {/* Title & Subtitle */}
         <div className="space-y-2">
-          <h3 className="text-2xl sm:text-3xl font-black uppercase tracking-wider text-slate-100">
-            Waiting for Live Sensor Data...
+          <h3 className="text-xl sm:text-2xl lg:text-3xl font-black uppercase tracking-[0.06em] text-slate-100">
+            {headline}
           </h3>
-          <p className="text-sm text-slate-400 leading-relaxed">
-            The dashboard is actively listening for telemetry packets from the ESP32 WSN nodes via MQTT and WebSocket.
+          <p className="text-xs sm:text-sm text-slate-500 leading-relaxed max-w-md mx-auto">
+            {detail}
           </p>
         </div>
 
-        {/* Status Indicator Pill */}
-        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-industrial-850 border border-industrial-700 text-xs font-mono text-slate-300">
+        {/* Endpoint pill */}
+        <div className="inline-flex items-center flex-wrap justify-center gap-2 px-3 py-2 rounded-xl instrument-well text-[10px] sm:text-[11px] font-mono text-slate-300 max-w-full">
           <span
-            className={`w-2.5 h-2.5 rounded-full ${
+            className={`w-2 h-2 rounded-full shrink-0 ${
               isConnected
                 ? 'bg-emerald-400 animate-pulse'
                 : isConnecting
@@ -61,43 +74,65 @@ export const WaitingState: React.FC<WaitingStateProps> = ({
                 : 'bg-rose-500'
             }`}
           />
-          <span suppressHydrationWarning>Endpoint: {wsUrl}</span>
-          <span>•</span>
-          <span className="uppercase text-cyan-300 font-semibold">{connectionState}</span>
+          <span suppressHydrationWarning className="truncate max-w-[16rem] sm:max-w-none">
+            {wsUrl}
+          </span>
+          <span className="text-slate-700">|</span>
+          <span className="uppercase text-cyan-300 font-bold tracking-wider">
+            {connectionState}
+          </span>
+          <span className="text-slate-700">|</span>
+          <span
+            className={`uppercase font-bold tracking-wider ${
+              mqttConnected ? 'text-emerald-300' : 'text-rose-300'
+            }`}
+          >
+            MQTT {mqttConnected ? 'UP' : 'DOWN'}
+          </span>
         </div>
 
-        {/* Diagnostic Actions & Sample Ingestion */}
-        <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-3">
-          {onSimulateSample && (
-            <button
-              onClick={onSimulateSample}
-              className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-xs font-bold uppercase tracking-wider transition-all shadow-lg shadow-cyan-950 flex items-center justify-center gap-2"
-            >
-              <Play className="w-4 h-4 fill-current" />
-              <span>Load Sample Node Telemetry (WSN-1)</span>
-            </button>
-          )}
-
+        {/* Actions */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-2.5">
           {onReconnect && (
             <button
+              type="button"
               onClick={onReconnect}
-              className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-industrial-800 hover:bg-industrial-700 border border-industrial-700 text-slate-300 text-xs font-semibold uppercase tracking-wider transition-all flex items-center justify-center gap-2"
+              className="px-4 py-3 rounded-xl bg-industrial-850 hover:bg-industrial-800 border border-white/[0.08] text-slate-300 text-[11px] font-bold uppercase tracking-[0.1em] transition-all flex items-center justify-center gap-2 active:scale-[0.98]"
             >
-              <RefreshCw className="w-3.5 h-3.5" />
-              <span>Retry WS Connect</span>
+              <RefreshCw className="w-3.5 h-3.5 shrink-0" />
+              <span>Retry connect</span>
             </button>
           )}
         </div>
 
-        {/* Quick Instructions */}
-        <div className="text-left bg-industrial-900/90 rounded-2xl p-4 border border-industrial-800 text-xs font-mono text-slate-400 space-y-1.5">
-          <div className="font-bold text-slate-300 flex items-center gap-2">
-            <Cpu className="w-4 h-4 text-cyan-400" />
-            <span>To stream live ESP32 hardware packets:</span>
+        {/* Runbook */}
+        <div className="text-left instrument-well rounded-2xl p-4 text-[11px] font-mono text-slate-400 space-y-2">
+          <div className="font-bold text-slate-200 flex items-center gap-2 text-[10px] uppercase tracking-[0.12em]">
+            <Terminal className="w-3.5 h-3.5 text-cyan-400" />
+            <span>Stream live ESP32 packets</span>
           </div>
-          <div>1. Start backend relay: <code className="text-cyan-300">npm run relay</code></div>
-          <div>2. Or run test packet injector: <code className="text-cyan-300">npm run simulate</code></div>
-          <div>3. Ensure ESP32 is publishing to MQTT topic: <code className="text-cyan-300">mine/test</code></div>
+          <ol className="space-y-1.5">
+            <li className="flex gap-2">
+              <span className="text-slate-600 shrink-0">1.</span>
+              <span>
+                Start the relay: <code className="text-cyan-300">npm run relay</code>
+              </span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-slate-600 shrink-0">2.</span>
+              <span>
+                Confirm the broker is reachable at{' '}
+                <code className="text-cyan-300">mqtt://…:1883</code>
+              </span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-slate-600 shrink-0">3.</span>
+              <span className="flex items-center gap-1.5 flex-wrap">
+                <Cpu className="w-3 h-3 text-cyan-400 shrink-0" />
+                ESP32 must publish to <code className="text-cyan-300">mine/test</code>
+              </span>
+            </li>
+          </ol>
         </div>
       </div>
     </div>

@@ -2,78 +2,306 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ==========================================================================
+   KAVACHAM - Design tokens
+   Industrial control-room palette. Severity is always encoded by BOTH colour
+   and an explicit text label so the UI stays readable for colour-blind users.
+   ========================================================================== */
+
 :root {
-  --background: #0b0f17;
+  --background: #05070c;
   --foreground: #f1f5f9;
+
+  --surface-0: #05070c;
+  --surface-1: #0a0e16;
+  --surface-2: #101622;
+  --surface-3: #151d2c;
+
+  --hairline: rgba(112, 135, 181, 0.16);
+  --hairline-strong: rgba(112, 135, 181, 0.3);
+
+  /* Severity ramp: safe -> caution -> warning -> critical */
+  --level-safe: #10b981;
+  --level-caution: #fbbf24;
+  --level-warning: #f97316;
+  --level-critical: #ef4444;
+  --level-live: #06b6d4;
+  --level-idle: #64748b;
+
+  --ring-accent: rgba(6, 182, 212, 0.5);
+
+  /* Mobile bottom-nav clearance (incl. iOS home indicator) */
+  --nav-safe-bottom: calc(4.75rem + env(safe-area-inset-bottom, 0px));
+}
+
+/* ========================================================================== */
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+html {
+  scroll-behavior: smooth;
+  /* Prevent iOS text auto-inflation from breaking the dense telemetry layout */
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
   color: var(--foreground);
-  background: var(--background);
-  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background-color: var(--background);
+  /* Layered ambience: cool top-light, warm floor bounce, fine engineering grid */
+  background-image:
+    radial-gradient(1200px 620px at 12% -10%, rgba(6, 182, 212, 0.09), transparent 60%),
+    radial-gradient(1000px 560px at 92% 0%, rgba(59, 130, 246, 0.08), transparent 62%),
+    radial-gradient(900px 700px at 50% 115%, rgba(15, 23, 42, 0.9), transparent 70%),
+    linear-gradient(rgba(112, 135, 181, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(112, 135, 181, 0.045) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 100% 100%, 40px 40px, 40px 40px;
+  background-attachment: fixed;
   overflow-x: hidden;
+  font-feature-settings: "cv02", "cv03", "cv04", "ss01";
 }
 
-/* Custom Scrollbars */
+/* Tabular numerals everywhere telemetry is displayed - stops readings from
+   jittering horizontally as digits change. */
+.font-mono,
+code,
+kbd,
+samp {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1, "zero" 1;
+}
+
+/* --------------------------------- Scrollbars --------------------------- */
+
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #0b0f17;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #1e293b;
+  background: rgba(51, 69, 104, 0.75);
   border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #334155;
+  background: rgba(75, 97, 142, 0.95);
+  background-clip: content-box;
 }
 
-/* Glass & Card styles */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(51, 69, 104, 0.8) transparent;
+}
+
+/* Horizontal chip rails on mobile - hide the bar, keep the scroll */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* --------------------------------- Focus -------------------------------- */
+
+:focus-visible {
+  outline: 2px solid var(--ring-accent);
+  outline-offset: 2px;
+  border-radius: 0.5rem;
+}
+
+/* ============================== Surfaces ================================= */
+
 .industrial-card {
-  background: linear-gradient(180deg, rgba(21, 29, 44, 0.75) 0%, rgba(13, 19, 30, 0.85) 100%);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(51, 69, 104, 0.4);
-  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.5), inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+  position: relative;
+  background: linear-gradient(180deg, rgba(21, 29, 44, 0.82) 0%, rgba(10, 14, 22, 0.92) 100%);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid var(--hairline);
+  box-shadow:
+    0 1px 0 0 rgba(255, 255, 255, 0.05) inset,
+    0 24px 48px -30px rgba(0, 0, 0, 0.95);
+  transition: border-color 220ms ease, box-shadow 220ms ease, transform 220ms ease;
+}
+
+/* Crisp top highlight - reads as brushed metal under the control-room light */
+.industrial-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(159, 179, 220, 0.28) 22%,
+    rgba(159, 179, 220, 0.28) 78%,
+    transparent
+  );
+  pointer-events: none;
 }
 
 .industrial-card:hover {
-  border-color: rgba(75, 97, 142, 0.6);
+  border-color: var(--hairline-strong);
+}
+
+.industrial-card-interactive:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 1px 0 0 rgba(255, 255, 255, 0.06) inset,
+    0 30px 56px -30px rgba(0, 0, 0, 1);
 }
 
 .industrial-card-emergency {
-  background: linear-gradient(180deg, rgba(153, 27, 27, 0.35) 0%, rgba(30, 10, 15, 0.9) 100%);
-  border: 1px solid rgba(239, 68, 68, 0.8);
-  box-shadow: 0 0 25px rgba(239, 68, 68, 0.3), inset 0 0 15px rgba(239, 68, 68, 0.15);
+  background: linear-gradient(180deg, rgba(153, 27, 27, 0.4) 0%, rgba(24, 8, 12, 0.94) 100%);
+  border: 1px solid rgba(239, 68, 68, 0.75);
+  box-shadow:
+    0 0 30px -6px rgba(239, 68, 68, 0.4),
+    inset 0 0 22px rgba(239, 68, 68, 0.14);
 }
+
+/* Inset instrument well - used behind gauges and telemetry tiles */
+.instrument-well {
+  background: radial-gradient(120% 120% at 50% 0%, rgba(30, 41, 59, 0.55), rgba(5, 7, 12, 0.85));
+  border: 1px solid var(--hairline);
+  box-shadow:
+    inset 0 2px 10px rgba(0, 0, 0, 0.65),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+}
+
+.glass-rail {
+  background: linear-gradient(180deg, rgba(11, 15, 23, 0.94), rgba(5, 7, 12, 0.97));
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+}
+
+/* ============================== Glows ==================================== */
 
 .glow-safe {
-  box-shadow: 0 0 15px rgba(16, 185, 129, 0.3);
+  box-shadow: 0 0 18px -2px rgba(16, 185, 129, 0.35);
 }
 
-.glow-emergency {
-  box-shadow: 0 0 20px rgba(239, 68, 68, 0.5);
+.glow-caution {
+  box-shadow: 0 0 18px -2px rgba(251, 191, 36, 0.35);
 }
 
 .glow-warning {
-  box-shadow: 0 0 15px rgba(245, 158, 11, 0.3);
+  box-shadow: 0 0 18px -2px rgba(249, 115, 22, 0.38);
+}
+
+.glow-emergency {
+  box-shadow: 0 0 26px -2px rgba(239, 68, 68, 0.55);
 }
 
 .glow-live {
-  box-shadow: 0 0 15px rgba(6, 182, 212, 0.3);
+  box-shadow: 0 0 18px -2px rgba(6, 182, 212, 0.35);
 }
 
-/* Diagonal Hazard Stripes for Alert Banner */
+/* ============================== Patterns ================================= */
+
 .hazard-stripes {
   background: repeating-linear-gradient(
     -45deg,
-    rgba(239, 68, 68, 0.15),
-    rgba(239, 68, 68, 0.15) 10px,
-    rgba(185, 28, 28, 0.35) 10px,
-    rgba(185, 28, 28, 0.35) 20px
+    rgba(239, 68, 68, 0.14),
+    rgba(239, 68, 68, 0.14) 10px,
+    rgba(185, 28, 28, 0.34) 10px,
+    rgba(185, 28, 28, 0.34) 20px
   );
+}
+
+.hazard-stripes-amber {
+  background: repeating-linear-gradient(
+    -45deg,
+    rgba(251, 191, 36, 0.14),
+    rgba(251, 191, 36, 0.14) 10px,
+    rgba(180, 83, 9, 0.32) 10px,
+    rgba(180, 83, 9, 0.32) 20px
+  );
+}
+
+/* Sweeping highlight for live / critical banners */
+.siren-sheen {
+  position: relative;
+  overflow: hidden;
+}
+
+.siren-sheen::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    100deg,
+    transparent 20%,
+    rgba(255, 255, 255, 0.1) 48%,
+    transparent 74%
+  );
+  animation: sirenSweep 2.2s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes sirenSweep {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* ============================== Type helpers ============================= */
+
+.label-eyebrow {
+  font-size: 0.625rem;
+  line-height: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #7087b5;
+}
+
+.readout {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+/* ============================== Gauge internals ========================== */
+
+.gauge-arc {
+  transition: stroke-dashoffset 780ms cubic-bezier(0.22, 1, 0.36, 1), stroke 380ms ease;
+}
+
+.gauge-pointer {
+  transition: transform 780ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ============================== Utilities ================================ */
+
+.pb-safe-nav {
+  padding-bottom: var(--nav-safe-bottom);
+}
+
+@media (min-width: 768px) {
+  .pb-safe-nav {
+    padding-bottom: 2.5rem;
+  }
+}
+
+/* ============================== Motion safety ============================ */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }

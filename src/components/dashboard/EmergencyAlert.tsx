@@ -2,7 +2,17 @@
 
 import React from 'react';
 import { AlertInfo } from '@/types/worker';
-import { AlertTriangle, Flame, Wind, AlertOctagon, CheckCircle2, BellRing, Clock, Cpu } from 'lucide-react';
+import {
+  AlertTriangle,
+  Flame,
+  Wind,
+  AlertOctagon,
+  CheckCircle2,
+  BellRing,
+  Clock,
+  Cpu,
+  CheckCheck,
+} from 'lucide-react';
 
 interface EmergencyAlertProps {
   alerts: AlertInfo[];
@@ -22,48 +32,81 @@ export const EmergencyAlert: React.FC<EmergencyAlertProps> = ({
   const getAlertIcon = (type: AlertInfo['type']) => {
     switch (type) {
       case 'MANUAL_SOS':
-        return <BellRing className="w-8 h-8 text-rose-300 animate-bounce" />;
+        return <BellRing className="w-6 h-6 sm:w-7 sm:h-7 text-rose-300 animate-bounce" />;
       case 'FALL':
-        return <AlertOctagon className="w-8 h-8 text-rose-300 animate-pulse" />;
+        return <AlertOctagon className="w-6 h-6 sm:w-7 sm:h-7 text-rose-300 animate-pulse" />;
       case 'GAS_UNSAFE':
-        return <Wind className="w-8 h-8 text-amber-300 animate-pulse" />;
+        return <Wind className="w-6 h-6 sm:w-7 sm:h-7 text-amber-300 animate-pulse" />;
       case 'TEMPERATURE_UNSAFE':
-        return <Flame className="w-8 h-8 text-orange-400 animate-pulse" />;
+        return <Flame className="w-6 h-6 sm:w-7 sm:h-7 text-orange-400 animate-pulse" />;
       default:
-        return <AlertTriangle className="w-8 h-8 text-rose-300" />;
+        return <AlertTriangle className="w-6 h-6 sm:w-7 sm:h-7 text-rose-300" />;
     }
   };
 
   const getAlertStyles = (severity: AlertInfo['severity']) => {
     if (severity === 'CRITICAL') {
       return {
-        cardBg: 'bg-gradient-to-r from-rose-950/90 via-red-900/80 to-rose-950/90 border-rose-500',
-        textColor: 'text-rose-200',
+        cardBg:
+          'bg-gradient-to-r from-rose-950/95 via-red-900/75 to-rose-950/95 border-rose-500/80',
+        textColor: 'text-rose-100',
         titleColor: 'text-white',
-        buttonClass: 'bg-rose-600 hover:bg-rose-500 text-white shadow-lg shadow-rose-900/60 border border-rose-400',
+        chip: 'border-rose-400/60 text-rose-200',
+        buttonClass:
+          'bg-rose-600 hover:bg-rose-500 text-white shadow-lg shadow-rose-950/60 border border-rose-400',
         glow: 'glow-emergency',
       };
     }
     if (severity === 'HIGH') {
       return {
-        cardBg: 'bg-gradient-to-r from-amber-950/90 via-orange-900/80 to-amber-950/90 border-amber-500',
-        textColor: 'text-amber-200',
-        titleColor: 'text-amber-100',
-        buttonClass: 'bg-amber-600 hover:bg-amber-500 text-white shadow-lg shadow-amber-900/60 border border-amber-400',
+        cardBg:
+          'bg-gradient-to-r from-amber-950/95 via-orange-900/75 to-amber-950/95 border-amber-500/80',
+        textColor: 'text-amber-100',
+        titleColor: 'text-amber-50',
+        chip: 'border-amber-400/60 text-amber-200',
+        buttonClass:
+          'bg-amber-600 hover:bg-amber-500 text-white shadow-lg shadow-amber-950/60 border border-amber-400',
         glow: 'glow-warning',
       };
     }
     return {
-      cardBg: 'bg-gradient-to-r from-orange-950/90 via-red-950/80 to-orange-950/90 border-orange-500',
-      textColor: 'text-orange-200',
-      titleColor: 'text-orange-100',
+      cardBg:
+        'bg-gradient-to-r from-orange-950/95 via-red-950/75 to-orange-950/95 border-orange-500/80',
+      textColor: 'text-orange-100',
+      titleColor: 'text-orange-50',
+      chip: 'border-orange-400/60 text-orange-200',
       buttonClass: 'bg-orange-600 hover:bg-orange-500 text-white border border-orange-400',
       glow: 'glow-warning',
     };
   };
 
   return (
-    <section aria-label="Critical Emergency Alerts" className="space-y-3 my-4">
+    <section
+      aria-label="Critical emergency alerts"
+      aria-live="assertive"
+      className="space-y-3"
+    >
+      {/* Stack header - lets an operator clear a burst of alerts in one action */}
+      {alerts.length > 1 && onClearAll && (
+        <div className="flex items-center justify-between gap-3 px-1">
+          <span className="text-[11px] font-black uppercase tracking-[0.12em] text-rose-300 flex items-center gap-2">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500" />
+            </span>
+            {alerts.length} unacknowledged incidents
+          </span>
+          <button
+            type="button"
+            onClick={onClearAll}
+            className="shrink-0 flex items-center gap-1.5 text-[10px] px-2.5 py-1.5 rounded-lg bg-industrial-850 border border-white/[0.1] text-slate-300 hover:text-white hover:border-white/25 font-black uppercase tracking-wider transition-colors"
+          >
+            <CheckCheck className="w-3.5 h-3.5" />
+            Ack all
+          </button>
+        </div>
+      )}
+
       {alerts.map((alert) => {
         const style = getAlertStyles(alert.severity);
         const alertTime = new Date(alert.timestamp).toLocaleTimeString([], {
@@ -73,60 +116,70 @@ export const EmergencyAlert: React.FC<EmergencyAlertProps> = ({
         });
 
         return (
-          <div
+          <article
             key={alert.id}
-            className={`relative overflow-hidden rounded-2xl border-2 p-5 sm:p-6 transition-all duration-300 animate-emergency-flash ${style.cardBg} ${style.glow}`}
+            className={`relative overflow-hidden rounded-2xl border p-4 sm:p-5 animate-emergency-flash ${style.cardBg} ${style.glow}`}
           >
             {/* Background warning pattern */}
-            <div className="absolute inset-0 hazard-stripes opacity-30 pointer-events-none" />
+            <div className="absolute inset-0 hazard-stripes opacity-25 pointer-events-none" />
 
-            <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-              {/* Alert Left Column: Icon + Text */}
-              <div className="flex items-start gap-4">
-                <div className="p-3.5 rounded-2xl bg-black/40 border border-white/20 shrink-0 shadow-inner">
+            <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+              {/* Icon + copy */}
+              <div className="flex items-start gap-3 sm:gap-4 min-w-0">
+                <div className="p-2.5 sm:p-3 rounded-2xl bg-black/45 border border-white/20 shrink-0 shadow-inner">
                   {getAlertIcon(alert.type)}
                 </div>
-                <div className="space-y-1">
+
+                <div className="space-y-1.5 min-w-0">
                   <div className="flex items-center flex-wrap gap-2">
-                    <span className="px-2.5 py-0.5 rounded-full text-xs font-black uppercase tracking-wider bg-black/50 border border-rose-400/50 text-rose-300">
-                      {alert.severity} PRIORITY
+                    <span
+                      className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-[0.12em] bg-black/55 border ${style.chip}`}
+                    >
+                      {alert.severity} priority
                     </span>
-                    <h2 className={`text-xl sm:text-2xl font-black tracking-wide ${style.titleColor}`}>
+                    <h2
+                      className={`text-base sm:text-xl lg:text-2xl font-black tracking-tight leading-tight ${style.titleColor}`}
+                    >
                       {alert.title}
                     </h2>
                   </div>
-                  <p className={`text-sm sm:text-base font-medium ${style.textColor}`}>
+
+                  <p className={`text-xs sm:text-sm font-medium ${style.textColor}`}>
                     {alert.description}
                   </p>
-                  <div className="flex items-center flex-wrap gap-3 pt-1 text-xs font-mono text-slate-300">
-                    <span className="flex items-center gap-1 bg-black/30 px-2 py-0.5 rounded">
-                      <Cpu className="w-3.5 h-3.5 text-cyan-300" />
-                      Node: <strong className="text-white ml-1">{alert.node}</strong>
+
+                  <div className="flex items-center flex-wrap gap-1.5 pt-1 text-[10px] font-mono text-slate-200">
+                    <span className="flex items-center gap-1 bg-black/40 px-2 py-1 rounded-md">
+                      <Cpu className="w-3 h-3 text-cyan-300" />
+                      Node <strong className="text-white">{alert.node}</strong>
                     </span>
-                    <span className="flex items-center gap-1 bg-black/30 px-2 py-0.5 rounded">
-                      Worker ID: <strong className="text-white ml-1">{alert.worker_id}</strong>
+                    <span className="flex items-center gap-1 bg-black/40 px-2 py-1 rounded-md">
+                      <strong className="text-white">{alert.worker_id}</strong>
                     </span>
-                    <span className="flex items-center gap-1 bg-black/30 px-2 py-0.5 rounded">
-                      <Clock className="w-3.5 h-3.5 text-slate-400" />
-                      Packet Time: <strong className="text-white ml-1">{alertTime}</strong>
+                    <span className="flex items-center gap-1 bg-black/40 px-2 py-1 rounded-md">
+                      <Clock className="w-3 h-3 text-slate-400" />
+                      <span suppressHydrationWarning className="text-white">
+                        {alertTime}
+                      </span>
                     </span>
                   </div>
                 </div>
               </div>
 
-              {/* Alert Right Column: Acknowledge Button */}
-              <div className="w-full md:w-auto flex items-center justify-end shrink-0 pt-2 md:pt-0">
+              {/* Acknowledge */}
+              <div className="w-full lg:w-auto shrink-0">
                 <button
                   id={`ack-btn-${alert.id}`}
+                  type="button"
                   onClick={() => onAcknowledge(alert.id)}
-                  className={`w-full md:w-auto px-6 py-3 rounded-xl font-bold uppercase tracking-wider text-sm transition-all transform active:scale-95 flex items-center justify-center gap-2 ${style.buttonClass}`}
+                  className={`w-full lg:w-auto px-5 sm:px-6 py-3 rounded-xl font-black uppercase tracking-[0.1em] text-xs sm:text-sm transition-all active:scale-[0.97] flex items-center justify-center gap-2 ${style.buttonClass}`}
                 >
-                  <CheckCircle2 className="w-5 h-5" />
-                  <span>ACKNOWLEDGE</span>
+                  <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5" />
+                  <span>Acknowledge</span>
                 </button>
               </div>
             </div>
-          </div>
+          </article>
         );
       })}
     </section>

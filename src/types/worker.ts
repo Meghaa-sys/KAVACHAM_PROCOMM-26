@@ -20,16 +20,24 @@ export type SafetyStatus = 'SAFE' | 'WARNING' | 'EMERGENCY';
 
 export type ConnectionState = 'CONNECTING' | 'CONNECTED' | 'DISCONNECTED' | 'ERROR';
 
+/** Transport link to the relay process, independent of the MQTT broker link. */
+export type SocketState = 'CONNECTING' | 'CONNECTED' | 'DISCONNECTED' | 'ERROR';
+
+export type AlertType = 'MANUAL_SOS' | 'FALL' | 'GAS_UNSAFE' | 'TEMPERATURE_UNSAFE';
+
 export interface AlertInfo {
   id: string;
-  type: 'MANUAL_SOS' | 'FALL' | 'GAS_UNSAFE' | 'TEMPERATURE_UNSAFE';
+  type: AlertType;
   title: string;
   description: string;
   severity: 'CRITICAL' | 'HIGH' | 'WARNING';
   worker_id: string;
   node: number;
   timestamp: number;
+  /** Node sequence number of the packet that raised the incident. */
+  sequence: number;
   acknowledged?: boolean;
+  acknowledged_at?: number;
 }
 
 export interface NetworkConfig {
@@ -60,4 +68,3 @@ export interface BroadcastCommand {
   timestamp: number;
   sender: string;
 }
-

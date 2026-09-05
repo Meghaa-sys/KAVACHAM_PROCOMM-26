@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Radio,
   AlertTriangle,
@@ -15,7 +15,7 @@ import {
   Zap,
   ShieldAlert,
   CheckCircle2,
-  Lock
+  Lock,
 } from 'lucide-react';
 import { BroadcastCommand, EmergencyBroadcastType } from '@/types/worker';
 
@@ -42,18 +42,36 @@ export const EmergencyBroadcastModal: React.FC<EmergencyBroadcastModalProps> = (
   const [ledStrobe, setLedStrobe] = useState<boolean>(true);
   const [confirmed, setConfirmed] = useState<boolean>(false);
 
+  // Escape closes, and the page behind must not scroll while the sheet is open.
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', onKey);
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const presets: Record<
     EmergencyBroadcastType,
-    { title: string; defaultMsg: string; icon: any; color: string; severity: string }
+    { title: string; defaultMsg: string; icon: any; accent: string; severity: string }
   > = {
     EARTHQUAKE: {
       title: '🌋 Earthquake / Seismic Tremor',
       defaultMsg:
         'CRITICAL: SEISMIC ACTIVITY / EARTHQUAKE EXPECTED. EVACUATE MINE WORKINGS IMMEDIATELY TO DESIGNATED REFUGE CHAMBERS OR SURFACE PORTAL!',
       icon: Layers,
-      color: 'border-rose-500 bg-rose-950/60 text-rose-300',
+      accent: '#ef4444',
       severity: 'CRITICAL EVACUATION',
     },
     GAS_LEAK: {
@@ -61,7 +79,7 @@ export const EmergencyBroadcastModal: React.FC<EmergencyBroadcastModalProps> = (
       defaultMsg:
         'HAZARDOUS GAS CONCENTRATION DETECTED. DON SELF-CONTAINED BREATHING APPARATUS AND EVACUATE UPWIND VIA INTAKE AIRWAYS!',
       icon: Wind,
-      color: 'border-amber-500 bg-amber-950/60 text-amber-300',
+      accent: '#f59e0b',
       severity: 'CRITICAL HAZARD',
     },
     CAVE_IN: {
@@ -69,7 +87,7 @@ export const EmergencyBroadcastModal: React.FC<EmergencyBroadcastModalProps> = (
       defaultMsg:
         'STRUCTURAL UNSTABILITY / ROOF STRATA FAILURE DETECTED. CEASE ALL HEAVY DRILLING AND CLEAR ACTIVE STOPE IMMEDIATELY!',
       icon: AlertTriangle,
-      color: 'border-orange-500 bg-orange-950/60 text-orange-300',
+      accent: '#f97316',
       severity: 'STRUCTURAL DANGER',
     },
     FLOOD: {
@@ -77,7 +95,7 @@ export const EmergencyBroadcastModal: React.FC<EmergencyBroadcastModalProps> = (
       defaultMsg:
         'UNCONTROLLED WATER INFLOW IN LOWER SUMP. MOVE UPWARD TO HIGHER ELEVATION DRIFTS AND SHAFTS IMMEDIATELY!',
       icon: Waves,
-      color: 'border-cyan-500 bg-cyan-950/60 text-cyan-300',
+      accent: '#06b6d4',
       severity: 'WATER HAZARD',
     },
     FIRE: {
@@ -85,21 +103,22 @@ export const EmergencyBroadcastModal: React.FC<EmergencyBroadcastModalProps> = (
       defaultMsg:
         'MINE FIRE DETECTED. ACTIVATE FIRE SUPPRESSION AND RETREAT TOWARDS FRESH AIR BASE.',
       icon: Flame,
-      color: 'border-red-600 bg-red-950/60 text-red-300',
+      accent: '#dc2626',
       severity: 'FIRE EMERGENCY',
     },
     CUSTOM: {
       title: '📢 Custom Operator Dispatch',
-      defaultMsg: 'ATTENTION ALL UNDERGROUND CREWS: SPECIAL INSTRUCTIONS FROM SURFACE CONTROL ROOM.',
+      defaultMsg:
+        'ATTENTION ALL UNDERGROUND CREWS: SPECIAL INSTRUCTIONS FROM SURFACE CONTROL ROOM.',
       icon: Radio,
-      color: 'border-blue-500 bg-blue-950/60 text-blue-300',
+      accent: '#3b82f6',
       severity: 'GENERAL NOTICE',
     },
     ALL_CLEAR: {
       title: '✅ All Clear / Normalcy',
       defaultMsg: 'ALL CLEAR: Emergency condition resolved. Safe to resume operations.',
       icon: CheckCircle2,
-      color: 'border-emerald-500 bg-emerald-950/60 text-emerald-300',
+      accent: '#10b981',
       severity: 'SAFE STATUS',
     },
   };
@@ -124,74 +143,115 @@ export const EmergencyBroadcastModal: React.FC<EmergencyBroadcastModalProps> = (
     onClose();
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="relative w-full max-w-2xl rounded-3xl bg-industrial-900 border-2 border-rose-500/80 shadow-2xl shadow-rose-950/80 overflow-hidden flex flex-col max-h-[92vh]">
-        {/* Top Hazard Stripe Header */}
-        <div className="hazard-stripes h-2 w-full" />
+  const actuators = [
+    {
+      key: 'buzzer',
+      on: buzzer,
+      toggle: () => setBuzzer(!buzzer),
+      icon: Volume2,
+      label: 'Audible Buzzer',
+    },
+    {
+      key: 'vibration',
+      on: vibration,
+      toggle: () => setVibration(!vibration),
+      icon: Vibrate,
+      label: 'Vibration Motor',
+    },
+    {
+      key: 'strobe',
+      on: ledStrobe,
+      toggle: () => setLedStrobe(!ledStrobe),
+      icon: Zap,
+      label: 'LED Strobe',
+    },
+  ];
 
-        {/* Modal Header */}
-        <div className="p-6 border-b border-industrial-700/80 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="p-3 rounded-2xl bg-rose-500/20 border border-rose-500/50 text-rose-400 animate-pulse">
-              <Radio className="w-7 h-7" />
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-black/85 backdrop-blur-md animate-fade-in"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Surface to underground emergency broadcast"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div className="relative w-full sm:max-w-2xl rounded-t-3xl sm:rounded-3xl bg-industrial-900 border-t-2 sm:border-2 border-rose-500/80 shadow-2xl shadow-rose-950/80 overflow-hidden flex flex-col max-h-[92dvh] animate-rise-in">
+        {/* Hazard stripe header */}
+        <div className="hazard-stripes h-2 w-full shrink-0" />
+
+        {/* Drag affordance on mobile sheets */}
+        <div className="sm:hidden flex justify-center pt-2 shrink-0">
+          <span className="w-10 h-1 rounded-full bg-white/20" />
+        </div>
+
+        {/* Header */}
+        <header className="p-4 sm:p-5 border-b border-white/[0.08] flex items-start justify-between gap-3 shrink-0">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="p-2.5 rounded-2xl bg-rose-500/20 border border-rose-500/50 text-rose-400 animate-pulse shrink-0">
+              <Radio className="w-5 h-5 sm:w-6 sm:h-6" />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 className="text-xl font-black uppercase tracking-wide text-white">
-                  Surface-to-Underground Emergency Broadcast
+            <div className="min-w-0">
+              <div className="flex items-center flex-wrap gap-2">
+                <h3 className="text-sm sm:text-lg font-black uppercase tracking-tight text-white leading-tight">
+                  Emergency Broadcast
                 </h3>
-                <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase bg-rose-600 text-white animate-pulse">
+                <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-rose-600 text-white animate-pulse shrink-0">
                   2-Way WSN
                 </span>
               </div>
-              <p className="text-xs text-slate-400">
-                Dispatches high-priority evacuation commands to all ESP32 node buzzers & LED strobes via MQTT
+              <p className="text-[10px] sm:text-[11px] text-slate-500 leading-snug mt-0.5">
+                Dispatches evacuation commands to every ESP32 node buzzer &amp; strobe via MQTT
               </p>
             </div>
           </div>
+
           <button
+            type="button"
             onClick={onClose}
-            className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-industrial-800 transition-colors"
+            aria-label="Close broadcast dialog"
+            className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/[0.08] transition-colors shrink-0"
           >
             <X className="w-5 h-5" />
           </button>
-        </div>
+        </header>
 
-        {/* Modal Body */}
-        <div className="p-6 space-y-5 overflow-y-auto flex-1">
-          {/* Active Broadcast Notification if running */}
+        {/* Body */}
+        <div className="p-4 sm:p-5 space-y-5 overflow-y-auto flex-1 overscroll-contain">
+          {/* Active broadcast notice */}
           {activeBroadcast && (
-            <div className="p-4 rounded-2xl bg-rose-950/90 border-2 border-rose-500 text-rose-200 flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2.5">
-                <ShieldAlert className="w-6 h-6 text-rose-400 animate-bounce" />
-                <div>
-                  <div className="text-xs font-black uppercase tracking-wider text-rose-400">
-                    Active Evacuation Siren Live on MQTT ({activeBroadcast.alert_type})
+            <div className="p-3.5 rounded-2xl bg-rose-950/90 border-2 border-rose-500 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-start gap-2.5 min-w-0">
+                <ShieldAlert className="w-5 h-5 text-rose-400 animate-bounce shrink-0 mt-0.5" />
+                <div className="min-w-0">
+                  <div className="text-[10px] font-black uppercase tracking-[0.1em] text-rose-400">
+                    Siren live on MQTT ({activeBroadcast.alert_type})
                   </div>
-                  <div className="text-xs font-mono text-slate-300 line-clamp-1">
+                  <div className="text-[11px] font-mono text-slate-300 line-clamp-2">
                     {activeBroadcast.message}
                   </div>
                 </div>
               </div>
               <button
+                type="button"
                 onClick={() => {
                   onCancelBroadcast();
                   onClose();
                 }}
-                className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold uppercase shrink-0 transition-colors"
+                className="shrink-0 px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-black uppercase tracking-wider transition-colors"
               >
-                Send ALL CLEAR
+                Send all clear
               </button>
             </div>
           )}
 
-          {/* Preset Selection Grid */}
-          <div className="space-y-2">
-            <label className="text-xs font-bold uppercase tracking-wider text-slate-300">
-              1. Select Emergency Warning Scenario
-            </label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          {/* Step 1 - scenario */}
+          <fieldset className="space-y-2.5">
+            <legend className="label-eyebrow !text-slate-300">
+              1. Select emergency scenario
+            </legend>
+            <div className="grid grid-cols-1 xs:grid-cols-2 gap-2.5">
               {(Object.keys(presets) as EmergencyBroadcastType[])
                 .filter((k) => k !== 'ALL_CLEAR')
                 .map((key) => {
@@ -202,126 +262,137 @@ export const EmergencyBroadcastModal: React.FC<EmergencyBroadcastModalProps> = (
                   return (
                     <button
                       key={key}
+                      type="button"
                       onClick={() => {
                         setSelectedType(key);
                         setCustomMsg('');
                       }}
-                      className={`p-3.5 rounded-2xl text-left border transition-all flex items-start gap-3 ${
+                      aria-pressed={isSelected}
+                      className={`p-3 rounded-2xl text-left border transition-all flex items-start gap-2.5 ${
                         isSelected
-                          ? `border-rose-500 bg-rose-950/50 shadow-lg shadow-rose-950/60 ring-2 ring-rose-500/40`
-                          : 'border-industrial-750 bg-industrial-850/70 hover:bg-industrial-800 text-slate-400'
+                          ? 'border-rose-500 bg-rose-950/50 ring-2 ring-rose-500/40'
+                          : 'border-white/[0.08] bg-industrial-850/70 hover:bg-industrial-800 hover:border-white/[0.16]'
                       }`}
                     >
-                      <div
-                        className={`p-2 rounded-xl ${
-                          isSelected ? 'bg-rose-500/20 text-rose-300' : 'bg-industrial-800 text-slate-400'
-                        }`}
+                      <span
+                        className="p-2 rounded-xl shrink-0"
+                        style={{
+                          backgroundColor: isSelected ? `${item.accent}25` : 'rgba(21,29,44,0.9)',
+                          color: isSelected ? item.accent : '#7087b5',
+                        }}
                       >
-                        <Icon className="w-5 h-5" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className={`text-sm font-bold truncate ${isSelected ? 'text-white' : 'text-slate-200'}`}>
+                        <Icon className="w-4 h-4" />
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span
+                          className={`block text-xs font-bold truncate ${
+                            isSelected ? 'text-white' : 'text-slate-300'
+                          }`}
+                        >
                           {item.title}
-                        </div>
-                        <div className="text-[10px] font-mono uppercase tracking-wider text-rose-400 font-semibold">
+                        </span>
+                        <span
+                          className="block text-[9px] font-mono uppercase tracking-[0.1em] font-bold mt-0.5"
+                          style={{ color: isSelected ? item.accent : '#4b618e' }}
+                        >
                           {item.severity}
-                        </div>
-                      </div>
+                        </span>
+                      </span>
                     </button>
                   );
                 })}
             </div>
-          </div>
+          </fieldset>
 
-          {/* Broadcast Message Preview / Edit */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center justify-between">
-              <span>2. Emergency Audio / Display Payload</span>
-              <span className="text-[10px] text-slate-400 font-mono">Topic: mine/command</span>
+          {/* Step 2 - payload */}
+          <div className="space-y-2">
+            <label
+              htmlFor="broadcast-message"
+              className="label-eyebrow !text-slate-300 flex items-center justify-between gap-2"
+            >
+              <span>2. Audio / display payload</span>
+              <span className="text-[9px] text-slate-500 font-mono normal-case tracking-normal">
+                Topic: mine/command
+              </span>
             </label>
             <textarea
+              id="broadcast-message"
               rows={3}
               value={customMsg || presets[selectedType].defaultMsg}
               onChange={(e) => setCustomMsg(e.target.value)}
-              className="w-full px-4 py-3 rounded-2xl bg-industrial-950 border border-industrial-700 text-sm font-mono text-slate-200 focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500"
+              className="w-full px-3.5 py-3 rounded-2xl bg-industrial-980 border border-white/[0.1] text-[11px] sm:text-xs font-mono text-slate-200 leading-relaxed focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500/60 resize-y"
               placeholder="Enter custom broadcast instructions..."
             />
           </div>
 
-          {/* Hardware Trigger Signals on ESP32 */}
-          <div className="space-y-2">
-            <label className="text-xs font-bold uppercase tracking-wider text-slate-300">
-              3. Hardware Actuators to Fire on Underground Miner Helmets / Nodes
-            </label>
-            <div className="grid grid-cols-3 gap-3">
-              <button
-                type="button"
-                onClick={() => setBuzzer(!buzzer)}
-                className={`p-3 rounded-xl border flex flex-col items-center gap-1.5 text-xs font-bold transition-all ${
-                  buzzer
-                    ? 'bg-rose-950/60 border-rose-500 text-rose-200'
-                    : 'bg-industrial-850/60 border-industrial-750 text-slate-500'
-                }`}
-              >
-                <Volume2 className={`w-5 h-5 ${buzzer ? 'text-rose-400' : 'text-slate-600'}`} />
-                <span>Audible Buzzer</span>
-                <span className="text-[10px] uppercase font-mono">{buzzer ? 'ACTIVE' : 'OFF'}</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setVibration(!vibration)}
-                className={`p-3 rounded-xl border flex flex-col items-center gap-1.5 text-xs font-bold transition-all ${
-                  vibration
-                    ? 'bg-rose-950/60 border-rose-500 text-rose-200'
-                    : 'bg-industrial-850/60 border-industrial-750 text-slate-500'
-                }`}
-              >
-                <Vibrate className={`w-5 h-5 ${vibration ? 'text-rose-400' : 'text-slate-600'}`} />
-                <span>Vibration Motor</span>
-                <span className="text-[10px] uppercase font-mono">{vibration ? 'ACTIVE' : 'OFF'}</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setLedStrobe(!ledStrobe)}
-                className={`p-3 rounded-xl border flex flex-col items-center gap-1.5 text-xs font-bold transition-all ${
-                  ledStrobe
-                    ? 'bg-rose-950/60 border-rose-500 text-rose-200'
-                    : 'bg-industrial-850/60 border-industrial-750 text-slate-500'
-                }`}
-              >
-                <Zap className={`w-5 h-5 ${ledStrobe ? 'text-rose-400' : 'text-slate-600'}`} />
-                <span>LED Strobe Alarm</span>
-                <span className="text-[10px] uppercase font-mono">{ledStrobe ? 'ACTIVE' : 'OFF'}</span>
-              </button>
+          {/* Step 3 - actuators */}
+          <fieldset className="space-y-2.5">
+            <legend className="label-eyebrow !text-slate-300">
+              3. Hardware actuators on miner nodes
+            </legend>
+            <div className="grid grid-cols-3 gap-2.5">
+              {actuators.map((a) => {
+                const Icon = a.icon;
+                return (
+                  <button
+                    key={a.key}
+                    type="button"
+                    onClick={a.toggle}
+                    aria-pressed={a.on}
+                    className={`p-3 rounded-2xl border flex flex-col items-center gap-1.5 text-center transition-all ${
+                      a.on
+                        ? 'bg-rose-950/60 border-rose-500 text-rose-200'
+                        : 'bg-industrial-850/60 border-white/[0.08] text-slate-500'
+                    }`}
+                  >
+                    <Icon
+                      className={`w-5 h-5 ${a.on ? 'text-rose-400 animate-pulse' : 'text-slate-600'}`}
+                    />
+                    <span className="text-[10px] font-bold leading-tight">{a.label}</span>
+                    <span
+                      className={`text-[9px] uppercase font-mono font-black px-1.5 py-0.5 rounded ${
+                        a.on ? 'bg-rose-500/25 text-rose-200' : 'bg-industrial-800 text-slate-600'
+                      }`}
+                    >
+                      {a.on ? 'Active' : 'Off'}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
-          </div>
+          </fieldset>
         </div>
 
-        {/* Modal Footer / Activation Button */}
-        <div className="p-6 bg-industrial-950 border-t border-industrial-800 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div className="text-xs text-slate-400 font-mono flex items-center gap-2">
-            <Lock className="w-4 h-4 text-amber-400" />
-            <span>Target: <strong className="text-white">ALL 4+ UNDERGROUND NODES</strong></span>
+        {/* Footer */}
+        <footer
+          className="p-4 sm:p-5 bg-industrial-980 border-t border-white/[0.08] flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shrink-0"
+          style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom, 0px))' }}
+        >
+          <div className="text-[10px] text-slate-500 font-mono flex items-center gap-2 justify-center sm:justify-start">
+            <Lock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+            <span>
+              Target: <strong className="text-slate-200">{target}</strong>
+            </span>
           </div>
 
-          <div className="flex w-full sm:w-auto items-center gap-3">
+          <div className="flex items-center gap-2.5">
             <button
+              type="button"
               onClick={onClose}
-              className="w-1/2 sm:w-auto px-4 py-3 rounded-xl bg-industrial-800 hover:bg-industrial-700 text-slate-300 text-xs font-bold uppercase transition-colors"
+              className="flex-1 sm:flex-none px-4 py-3 rounded-xl bg-industrial-850 hover:bg-industrial-800 border border-white/[0.08] text-slate-300 text-[11px] font-black uppercase tracking-wider transition-colors"
             >
               Cancel
             </button>
             <button
+              type="button"
               onClick={handleSend}
-              className="w-1/2 sm:w-auto px-6 py-3 rounded-xl bg-gradient-to-r from-rose-600 via-red-600 to-rose-700 hover:from-rose-500 hover:to-red-500 text-white text-xs font-black uppercase tracking-wider transition-all shadow-xl shadow-rose-950 flex items-center justify-center gap-2 animate-pulse"
+              className="flex-[2] sm:flex-none px-5 py-3 rounded-xl bg-gradient-to-r from-rose-600 via-red-600 to-rose-700 hover:from-rose-500 hover:to-red-500 text-white text-[11px] font-black uppercase tracking-[0.1em] transition-all shadow-xl shadow-rose-950/70 flex items-center justify-center gap-2 active:scale-[0.98]"
             >
-              <Send className="w-4 h-4 fill-current" />
-              <span>TRANSMIT EVACUATION ALARM</span>
+              <Send className="w-4 h-4 shrink-0" />
+              <span>Transmit alarm</span>
             </button>
           </div>
-        </div>
+        </footer>
       </div>
     </div>
   );
