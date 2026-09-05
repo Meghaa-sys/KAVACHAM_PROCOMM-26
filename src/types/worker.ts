@@ -38,3 +38,26 @@ export interface NetworkConfig {
   wsUrl: string;
   gatewayName: string;
 }
+
+export type EmergencyBroadcastType =
+  | 'EARTHQUAKE'
+  | 'GAS_LEAK'
+  | 'CAVE_IN'
+  | 'FLOOD'
+  | 'FIRE'
+  | 'ALL_CLEAR'
+  | 'CUSTOM';
+
+export interface BroadcastCommand {
+  command: 'EVACUATE' | 'ALERT' | 'ALL_CLEAR' | 'TEST';
+  alert_type: EmergencyBroadcastType;
+  priority: 'CRITICAL' | 'HIGH' | 'NORMAL';
+  message: string;
+  target: 'ALL_NODES' | string;
+  buzzer: boolean;
+  vibration: boolean;
+  led_strobe: boolean;
+  timestamp: number;
+  sender: string;
+}
+

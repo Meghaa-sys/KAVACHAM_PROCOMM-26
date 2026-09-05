@@ -20,6 +20,8 @@ console.log(`📋 MQTT Topic  : ${MQTT_TOPIC}`);
 console.log(`🌐 WS Server   : ws://0.0.0.0:${WS_PORT}`);
 console.log('====================================================');
 
+const MQTT_COMMAND_TOPIC = process.env.MQTT_COMMAND_TOPIC || 'mine/command';
+
 // 1. Initialize WebSocket Server
 const wss = new WebSocketServer({ port: WS_PORT }, () => {
   console.log(`[WS] WebSocket server started and listening on port ${WS_PORT}`);
@@ -50,8 +52,40 @@ wss.on('connection', (ws, req) => {
     status: 'CONNECTED',
     mqtt_broker: MQTT_BROKER,
     topic: MQTT_TOPIC,
+    command_topic: MQTT_COMMAND_TOPIC,
     timestamp: Date.now()
   }));
+
+  // Handle downstream broadcast commands from Dashboard (Surface -> Underground)
+  ws.on('message', (messageData) => {
+    try {
+      const parsed = JSON.parse(messageData.toString());
+      if (parsed && parsed.type === 'BROADCAST_COMMAND') {
+        const cmd = parsed.command;
+        const payloadStr = JSON.stringify(cmd);
+        console.log(`\n🚨 [DOWNSTREAM COMMAND] [${cmd.command} - ${cmd.alert_type}]`);
+        console.log(`Forwarding to MQTT: ${MQTT_COMMAND_TOPIC} -> Target: ${cmd.target}`);
+        
+        // Publish to MQTT Broker for ESP32 WSN nodes
+        if (mqttClient && mqttClient.connected) {
+          mqttClient.publish(MQTT_COMMAND_TOPIC, payloadStr, { qos: 1 });
+          mqttClient.publish('mine/broadcast', payloadStr, { qos: 1 });
+          console.log(`[MQTT PUB SUCCESS] Sent to ${MQTT_COMMAND_TOPIC} & mine/broadcast`);
+        } else {
+          console.warn(`[MQTT WARNING] Broker not connected, could not send downstream command to MQTT.`);
+        }
+
+        // Echo back to all dashboards
+        broadcast({
+          type: 'BROADCAST_CONFIRMATION',
+          command: cmd,
+          timestamp: Date.now(),
+        });
+      }
+    } catch (err) {
+      console.error('[WS INCOMING ERROR] Failed to process message:', err.message);
+    }
+  });
 
   ws.on('close', () => {
     console.log(`[WS] Dashboard client disconnected. Total clients: ${wss.clients.size}`);

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { WorkerData, ConnectionState, AlertInfo, SafetyStatus } from '@/types/worker';
+import { WorkerData, ConnectionState, AlertInfo, SafetyStatus, BroadcastCommand } from '@/types/worker';
 
 export interface UseLiveWorkerDataOptions {
   wsUrl?: string;
@@ -41,6 +41,8 @@ export function useLiveWorkerData(options: UseLiveWorkerDataOptions = {}) {
   const [secondsAgo, setSecondsAgo] = useState<number | null>(null);
   const [packetCount, setPacketCount] = useState<number>(0);
   const [acknowledgedAlertIds, setAcknowledgedAlertIds] = useState<Set<string>>(new Set());
+  
+  const [activeBroadcast, setActiveBroadcast] = useState<BroadcastCommand | null>(null);
   
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -111,6 +113,16 @@ export function useLiveWorkerData(options: UseLiveWorkerDataOptions = {}) {
         if (!isMountedRef.current) return;
         try {
           const parsed = JSON.parse(event.data);
+          
+          if (parsed && parsed.type === 'BROADCAST_CONFIRMATION') {
+            if (parsed.command && parsed.command.command === 'ALL_CLEAR') {
+              setActiveBroadcast(null);
+            } else if (parsed.command) {
+              setActiveBroadcast(parsed.command);
+            }
+            return;
+          }
+
           // Check if it's a broadcast wrapper or raw payload
           if (parsed && parsed.payload) {
             handleIncomingPayload(parsed.payload);
@@ -284,6 +296,64 @@ export function useLiveWorkerData(options: UseLiveWorkerDataOptions = {}) {
     handleIncomingPayload(base);
   }, [handleIncomingPayload]);
 
+  // Send Downstream Emergency Broadcast from Control Room to all underground nodes
+  const sendEmergencyBroadcast = useCallback((customCmd?: Partial<BroadcastCommand>) => {
+    const cmd: BroadcastCommand = {
+      command: 'EVACUATE',
+      alert_type: 'EARTHQUAKE',
+      priority: 'CRITICAL',
+      message: 'CRITICAL: SEISMIC ACTIVITY / EARTHQUAKE WARNING. EVACUATE MINE IMMEDIATELY!',
+      target: 'ALL_NODES',
+      buzzer: true,
+      vibration: true,
+      led_strobe: true,
+      timestamp: Date.now(),
+      sender: 'CONTROL_ROOM_SURFACE',
+      ...customCmd,
+    };
+
+    setActiveBroadcast(cmd);
+
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(
+        JSON.stringify({
+          type: 'BROADCAST_COMMAND',
+          command: cmd,
+        })
+      );
+      console.log('[KAVACHAM WS] Dispatched emergency broadcast to relay:', cmd);
+    } else {
+      console.warn('[KAVACHAM WS] WebSocket not connected; set local broadcast state only.');
+    }
+  }, []);
+
+  const cancelEmergencyBroadcast = useCallback(() => {
+    const allClearCmd: BroadcastCommand = {
+      command: 'ALL_CLEAR',
+      alert_type: 'ALL_CLEAR',
+      priority: 'NORMAL',
+      message: 'ALL CLEAR: Emergency condition resolved. Resume standard operations.',
+      target: 'ALL_NODES',
+      buzzer: false,
+      vibration: false,
+      led_strobe: false,
+      timestamp: Date.now(),
+      sender: 'CONTROL_ROOM_SURFACE',
+    };
+
+    setActiveBroadcast(null);
+
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(
+        JSON.stringify({
+          type: 'BROADCAST_COMMAND',
+          command: allClearCmd,
+        })
+      );
+      console.log('[KAVACHAM WS] Dispatched ALL_CLEAR to underground nodes.');
+    }
+  }, []);
+
   const selectedWorker = selectedWorkerId ? workers[selectedWorkerId] || null : Object.values(workers)[0] || null;
   const workersList = Object.values(workers);
 
@@ -300,6 +370,9 @@ export function useLiveWorkerData(options: UseLiveWorkerDataOptions = {}) {
     activeAlerts,
     acknowledgeAlert,
     clearAllAlerts,
+    activeBroadcast,
+    sendEmergencyBroadcast,
+    cancelEmergencyBroadcast,
     currentWsUrl,
     setCurrentWsUrl,
     reconnect: connect,

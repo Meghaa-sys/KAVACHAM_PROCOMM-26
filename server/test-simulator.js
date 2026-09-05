@@ -73,6 +73,26 @@ let wsClient = null;
 mqttClient.on('connect', () => {
   isMqttConnected = true;
   console.log(`[Simulator] Connected to MQTT broker ${MQTT_BROKER}`);
+  
+  // Subscribe to downstream commands from surface
+  mqttClient.subscribe('mine/command', (err) => {
+    if (!err) console.log(`[Simulator] ESP32 Nodes listening for downstream evacuation commands on: mine/command`);
+  });
+});
+
+mqttClient.on('message', (topic, msg) => {
+  if (topic === 'mine/command' || topic === 'mine/broadcast') {
+    try {
+      const cmd = JSON.parse(msg.toString());
+      console.log(`\n======================================================`);
+      console.log(`🚨 [UNDERGROUND ESP32 NODES RECEIVED BROADCAST!]`);
+      console.log(`COMMAND      : ${cmd.command} (${cmd.alert_type})`);
+      console.log(`MESSAGE      : ${cmd.message}`);
+      console.log(`ACTUATORS    : Buzzer [${cmd.buzzer ? '🔔 ON' : 'OFF'}] | Vibration [${cmd.vibration ? '📳 ON' : 'OFF'}] | Strobe [${cmd.led_strobe ? '💡 ON' : 'OFF'}]`);
+      console.log(`NODE STATUS  : All 4 Miner nodes (WSN-1..WSN-4) acknowledging alarm & executing evacuation!`);
+      console.log(`======================================================\n`);
+    } catch (e) {}
+  }
 });
 
 mqttClient.on('error', (err) => {

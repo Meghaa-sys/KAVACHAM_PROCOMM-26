@@ -10,6 +10,8 @@ import { WorkerDetailCard } from '@/components/dashboard/WorkerDetailCard';
 import { WorkersList } from '@/components/dashboard/WorkersList';
 import { NetworkStatus } from '@/components/dashboard/NetworkStatus';
 import { WaitingState } from '@/components/dashboard/WaitingState';
+import { EmergencyBroadcastModal } from '@/components/dashboard/EmergencyBroadcastModal';
+import { ActiveBroadcastBanner } from '@/components/dashboard/ActiveBroadcastBanner';
 import {
   Activity,
   AlertTriangle,
@@ -21,12 +23,14 @@ import {
   Zap,
   Users,
   Network as NetworkIcon,
-  BellRing
+  BellRing,
+  Send
 } from 'lucide-react';
 
 export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState<string>('dashboard');
   const [isSimulatingStream, setIsSimulatingStream] = useState<boolean>(false);
+  const [isBroadcastModalOpen, setIsBroadcastModalOpen] = useState<boolean>(false);
 
   const {
     workers,
@@ -40,6 +44,9 @@ export default function DashboardPage() {
     activeAlerts,
     acknowledgeAlert,
     clearAllAlerts,
+    activeBroadcast,
+    sendEmergencyBroadcast,
+    cancelEmergencyBroadcast,
     currentWsUrl,
     setCurrentWsUrl,
     reconnect,
@@ -191,50 +198,73 @@ export default function DashboardPage() {
               </p>
             </div>
 
-            {/* Quick Test Bar / Scenario Triggers */}
-            <div className="flex items-center flex-wrap gap-2">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 hidden lg:inline">
-                Simulate Scenario:
-              </span>
+            {/* Quick Actions & Emergency Evacuation Trigger */}
+            <div className="flex items-center flex-wrap gap-2.5">
+              {/* PRIMARY DOWNSTREAM EVACUATION BROADCAST BUTTON */}
               <button
-                onClick={() => triggerScenario('SOS')}
-                className="px-2.5 py-1 rounded-lg text-xs font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40 hover:bg-rose-500/30 transition-colors"
-                title="Simulate WSN-1 Manual SOS"
+                onClick={() => setIsBroadcastModalOpen(true)}
+                className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 border shadow-lg ${
+                  activeBroadcast
+                    ? 'bg-rose-600 text-white border-rose-400 shadow-rose-950 animate-pulse'
+                    : 'bg-gradient-to-r from-rose-600/90 to-red-600/90 hover:from-rose-500 hover:to-red-500 text-white border-rose-500/50 shadow-rose-950/40'
+                }`}
+                title="Send Earthquake or Emergency Evacuation warning to all underground WSN nodes"
               >
-                🚨 SOS
+                <Radio className="w-4 h-4 animate-spin" />
+                <span>{activeBroadcast ? '📢 EVACUATION ACTIVE' : '📢 Broadcast Evac Alarm'}</span>
               </button>
-              <button
-                onClick={() => triggerScenario('FALL')}
-                className="px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 transition-colors"
-                title="Simulate WSN-2 Fall Incident"
-              >
-                ⚠️ Fall
-              </button>
-              <button
-                onClick={() => triggerScenario('GAS')}
-                className="px-2.5 py-1 rounded-lg text-xs font-bold bg-orange-500/20 text-orange-300 border border-orange-500/40 hover:bg-orange-500/30 transition-colors"
-                title="Simulate WSN-3 Gas Leak"
-              >
-                ☣️ Gas
-              </button>
-              <button
-                onClick={() => triggerScenario('NORMAL')}
-                className="px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/30 transition-colors"
-                title="Simulate Normal Telemetry"
-              >
-                ✅ Normal
-              </button>
-              <button
-                onClick={() => triggerScenario('MULTI')}
-                className="px-2.5 py-1 rounded-lg text-xs font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 hover:bg-cyan-500/30 transition-colors hidden sm:inline-block"
-                title="Simulate Fleet (4 nodes)"
-              >
-                👥 Fleet
-              </button>
+
+              {/* Scenario Test Buttons */}
+              <div className="hidden sm:flex items-center gap-1.5 p-1 rounded-xl bg-industrial-900 border border-industrial-800">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-1.5">
+                  Test:
+                </span>
+                <button
+                  onClick={() => triggerScenario('SOS')}
+                  className="px-2 py-1 rounded-lg text-xs font-bold bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 transition-colors"
+                  title="Simulate WSN-1 Manual SOS"
+                >
+                  🚨 SOS
+                </button>
+                <button
+                  onClick={() => triggerScenario('FALL')}
+                  className="px-2 py-1 rounded-lg text-xs font-bold bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 transition-colors"
+                  title="Simulate WSN-2 Fall Incident"
+                >
+                  ⚠️ Fall
+                </button>
+                <button
+                  onClick={() => triggerScenario('GAS')}
+                  className="px-2 py-1 rounded-lg text-xs font-bold bg-orange-500/20 text-orange-300 hover:bg-orange-500/30 transition-colors"
+                  title="Simulate WSN-3 Gas Leak"
+                >
+                  ☣️ Gas
+                </button>
+                <button
+                  onClick={() => triggerScenario('NORMAL')}
+                  className="px-2 py-1 rounded-lg text-xs font-bold bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 transition-colors"
+                  title="Simulate Normal Telemetry"
+                >
+                  ✅ OK
+                </button>
+                <button
+                  onClick={() => triggerScenario('MULTI')}
+                  className="px-2 py-1 rounded-lg text-xs font-bold bg-cyan-500/20 text-cyan-300 hover:bg-cyan-500/30 transition-colors"
+                  title="Simulate Fleet (4 nodes)"
+                >
+                  👥 Fleet
+                </button>
+              </div>
             </div>
           </div>
 
-          {/* Emergency Alert Banner (Renders whenever SOS, Fall, Gas or Temp alerts are active) */}
+          {/* Active Downstream Evacuation Broadcast Siren Banner */}
+          <ActiveBroadcastBanner
+            broadcast={activeBroadcast}
+            onCancel={cancelEmergencyBroadcast}
+          />
+
+          {/* Emergency Alert Banner (Renders whenever SOS, Fall, Gas or Temp alerts are active from workers) */}
           <EmergencyAlert
             alerts={activeAlerts}
             onAcknowledge={acknowledgeAlert}
@@ -331,6 +361,15 @@ export default function DashboardPage() {
               )}
             </>
           )}
+
+          {/* Emergency Surface-to-Underground Broadcast Modal */}
+          <EmergencyBroadcastModal
+            isOpen={isBroadcastModalOpen}
+            onClose={() => setIsBroadcastModalOpen(false)}
+            onBroadcast={sendEmergencyBroadcast}
+            activeBroadcast={activeBroadcast}
+            onCancelBroadcast={cancelEmergencyBroadcast}
+          />
         </main>
       </div>
     </div>
