@@ -1,0 +1,79 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #0b0f17;
+  --foreground: #f1f5f9;
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  overflow-x: hidden;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0b0f17;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #334155;
+}
+
+/* Glass & Card styles */
+.industrial-card {
+  background: linear-gradient(180deg, rgba(21, 29, 44, 0.75) 0%, rgba(13, 19, 30, 0.85) 100%);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(51, 69, 104, 0.4);
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.5), inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+}
+
+.industrial-card:hover {
+  border-color: rgba(75, 97, 142, 0.6);
+}
+
+.industrial-card-emergency {
+  background: linear-gradient(180deg, rgba(153, 27, 27, 0.35) 0%, rgba(30, 10, 15, 0.9) 100%);
+  border: 1px solid rgba(239, 68, 68, 0.8);
+  box-shadow: 0 0 25px rgba(239, 68, 68, 0.3), inset 0 0 15px rgba(239, 68, 68, 0.15);
+}
+
+.glow-safe {
+  box-shadow: 0 0 15px rgba(16, 185, 129, 0.3);
+}
+
+.glow-emergency {
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.5);
+}
+
+.glow-warning {
+  box-shadow: 0 0 15px rgba(245, 158, 11, 0.3);
+}
+
+.glow-live {
+  box-shadow: 0 0 15px rgba(6, 182, 212, 0.3);
+}
+
+/* Diagonal Hazard Stripes for Alert Banner */
+.hazard-stripes {
+  background: repeating-linear-gradient(
+    -45deg,
+    rgba(239, 68, 68, 0.15),
+    rgba(239, 68, 68, 0.15) 10px,
+    rgba(185, 28, 28, 0.35) 10px,
+    rgba(185, 28, 28, 0.35) 20px
+  );
+}
