@@ -20,20 +20,16 @@ export function computeWorkerStatus(data: WorkerData | null): SafetyStatus {
 }
 
 export function useLiveWorkerData(options: UseLiveWorkerDataOptions = {}) {
-  const [currentWsUrl, setCurrentWsUrl] = useState<string>(() => {
-    if (options.wsUrl) return options.wsUrl;
-    if (typeof window !== 'undefined') {
-      const host = window.location.hostname || 'localhost';
-      return `ws://${host}:8080`;
-    }
-    return process.env.NEXT_PUBLIC_WS_URL || 'ws://192.168.146.22:8080';
-  });
+  const defaultWsUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://192.168.146.22:8080';
+  const [currentWsUrl, setCurrentWsUrl] = useState<string>(options.wsUrl || defaultWsUrl);
 
   useEffect(() => {
     if (!options.wsUrl && typeof window !== 'undefined') {
-      const host = window.location.hostname || 'localhost';
-      const dynamicUrl = `ws://${host}:8080`;
-      setCurrentWsUrl((prev) => (prev.includes(':8080') ? dynamicUrl : prev));
+      const host = window.location.hostname;
+      if (host && host !== '192.168.146.22') {
+        const dynamicUrl = `ws://${host}:8080`;
+        setCurrentWsUrl(dynamicUrl);
+      }
     }
   }, [options.wsUrl]);
   

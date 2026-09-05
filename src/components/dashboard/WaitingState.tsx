@@ -61,7 +61,7 @@ export const WaitingState: React.FC<WaitingStateProps> = ({
                 : 'bg-rose-500'
             }`}
           />
-          <span>Endpoint: {wsUrl}</span>
+          <span suppressHydrationWarning>Endpoint: {wsUrl}</span>
           <span>•</span>
           <span className="uppercase text-cyan-300 font-semibold">{connectionState}</span>
         </div>

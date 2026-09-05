@@ -122,7 +122,7 @@ export const Header: React.FC<HeaderProps> = ({
             onClick={onReconnect}
           />
           <span className="text-slate-400">Last updated:</span>
-          <span className="font-semibold text-slate-100">
+          <span suppressHydrationWarning className="font-semibold text-slate-100">
             {secondsAgo !== null
               ? secondsAgo === 0
                 ? 'just now'
