@@ -13,7 +13,7 @@
 const mqtt = require('mqtt');
 const { WebSocketServer, WebSocket } = require('ws');
 
-const MQTT_BROKER = process.env.MQTT_BROKER || 'mqtt://192.168.146.22:1883';
+const MQTT_BROKER = process.env.MQTT_BROKER || 'mqtt://10.79.142.22:1883';
 const MQTT_TOPIC = process.env.MQTT_TOPIC || 'mine/test';
 const WS_PORT = parseInt(process.env.WS_PORT || '8080', 10);
 

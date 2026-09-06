@@ -81,13 +81,13 @@ const ALERT_TRIGGERS: {
 ];
 
 export function useLiveWorkerData(options: UseLiveWorkerDataOptions = {}) {
-  const defaultWsUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://192.168.146.22:8080';
+  const defaultWsUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://10.109.15.22:8080';
   const [currentWsUrl, setCurrentWsUrl] = useState<string>(options.wsUrl || defaultWsUrl);
 
   useEffect(() => {
     if (!options.wsUrl && typeof window !== 'undefined') {
       const host = window.location.hostname;
-      if (host && host !== '192.168.146.22') {
+      if (host && host !== '10.109.15.22') {
         const dynamicUrl = `ws://${host}:8080`;
         setCurrentWsUrl(dynamicUrl);
       }
@@ -106,7 +106,6 @@ export function useLiveWorkerData(options: UseLiveWorkerDataOptions = {}) {
   const [lastPacketTime, setLastPacketTime] = useState<number | null>(null);
   const [secondsAgo, setSecondsAgo] = useState<number | null>(null);
   const [packetCount, setPacketCount] = useState<number>(0);
-
   // Persistent incident queue. Entries survive later packets, node flag resets,
   // broker dropouts and reconnects - only an explicit acknowledge removes one.
   const [alertQueue, setAlertQueue] = useState<AlertInfo[]>([]);

@@ -73,7 +73,7 @@ export const NetworkStatus: React.FC<NetworkStatusProps> = ({
     setIsEditing(false);
   };
 
-  const broker = process.env.NEXT_PUBLIC_MQTT_BROKER || '192.168.146.22';
+  const broker = process.env.NEXT_PUBLIC_MQTT_BROKER || '10.109.15.22';
 
   return (
     <section className="industrial-card rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-7 space-y-5">

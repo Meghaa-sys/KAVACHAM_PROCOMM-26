@@ -26,6 +26,9 @@ yarn-error.log*
 # Environment files
 .env*.local
 
+# Build info
+*.tsbuildinfo
+
 # IDEs
 .vscode/
 .idea/

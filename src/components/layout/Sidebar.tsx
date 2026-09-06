@@ -145,7 +145,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <div className="flex items-center justify-between text-[10px] font-mono gap-2">
               <span className="text-slate-500 shrink-0">Broker</span>
               <span className="text-slate-300 truncate">
-                {process.env.NEXT_PUBLIC_MQTT_BROKER || '192.168.146.22'}
+                {process.env.NEXT_PUBLIC_MQTT_BROKER || '10.109.15.22'}
               </span>
             </div>
             <div className="flex items-center justify-between text-[10px] font-mono gap-2">

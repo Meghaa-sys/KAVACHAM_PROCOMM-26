@@ -10,9 +10,9 @@
 const mqtt = require('mqtt');
 const WebSocket = require('ws');
 
-const MQTT_BROKER = process.env.MQTT_BROKER || 'mqtt://192.168.146.22:1883';
+const MQTT_BROKER = process.env.MQTT_BROKER || 'mqtt://10.79.142.22:1883';
 const MQTT_TOPIC = process.env.MQTT_TOPIC || 'mine/test';
-const WS_URL = process.env.WS_URL || 'ws://192.168.146.22:8080';
+const WS_URL = process.env.WS_URL || 'ws://10.79.142.22:8080';
 
 console.log('🛡️ KAVACHAM ESP32 WSN Packet Simulator Starting...');
 
